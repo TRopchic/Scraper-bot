@@ -1,0 +1,55 @@
+# ─────────────────────────────────────────────────────────────────────
+# Binance Copy Trading Scraper — Hourly Cron Job
+# ─────────────────────────────────────────────────────────────────────
+# Runs every hour on GitHub Actions (free tier).
+# Scrapes trader positions using Playwright and stores them in MongoDB.
+# ─────────────────────────────────────────────────────────────────────
+
+name: Scrape Binance Traders
+
+on:
+  schedule:
+    # Run every hour at minute 0
+    - cron: "0 * * * *"
+  
+  # Allow manual trigger from the GitHub Actions UI
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── Check out the repository ──
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      # ── Set up Python ──
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      # ── Install Python dependencies ──
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ── Install Playwright browser binaries ──
+      - name: 🌐 Install Playwright Chromium
+        run: |
+          playwright install chromium
+          playwright install-deps chromium
+
+      # ── Run the scraper ──
+      - name: 🤖 Run scraper pipeline
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: |
+          python main.py
