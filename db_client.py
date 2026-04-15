@@ -82,7 +82,16 @@ def ensure_indexes(db_name: str = "binance_scraper"):
     hist.create_index([("trader_uid", 1), ("symbol", 1)], name="hist_by_trader_symbol")
     hist.create_index([("snapshot_at", -1)], name="hist_by_time")
 
-    logger.info("✅  Database indexes ensured.")
+    # Set up TTL index for position_history (auto-delete after 30 days)
+    try:
+        hist.create_index(
+            "snapshot_at", 
+            expireAfterSeconds=2592000, # 30 days
+            name="history_ttl_30d"
+        )
+        logger.info("✅  Database indexes ensured.")
+    except Exception as e:
+        logger.error(f"Failed to create TTL index: {e}")
 
 
 # ─── Upsert logic ───────────────────────────────────────────────────
